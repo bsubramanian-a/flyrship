@@ -1,0 +1,76 @@
+@media (max-width: 1360px) {
+  /* smartphones, iPhone, portrait 480x320 phones */
+  .signup-bg {
+    background-image: none;
+    background-repeat: no-repeat;
+    background-position: right;
+    height: inherit !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .main-margin-wrapper {
+    /* margin-left: 320px; */
+    padding-top: 100px;
+  }
+  .main-margin-wrapper .fixed-right {
+    position: absolute;
+    width: -webkit-fill-available;
+    left: 0px;
+    margin-right: 2em;
+  }
+}
+
+@media (max-width: 992px) {
+  .main-margin-wrapper {
+    margin-left: 0px;
+    padding-top: 100px;
+  }
+  .mobile-nav-menu .MuiMenu-paper {
+    width: 100%;
+    top: 72px !important;
+  }
+  .full-width {
+    width: 100% !important;
+  }
+
+  .responsive-modal2 {
+    width: 90%;
+    height: 320px;
+    overflow-y: scroll;
+  }
+  .main-margin-wrapper .fixed-right {
+    position: absolute;
+    width: -webkit-fill-available;
+    left: 2em;
+    margin-right: 2em;
+  }
+  .custom-modal .MuiBox-root {
+    width: 100%;
+  }
+  .section-bg {
+    padding: 2em 0em;
+  }
+  .how-it-works-bg {
+    padding: 2em 0em 17em;
+  }
+  .mobile-scroll-modal {
+    overflow-y: scroll;
+    height: calc(100vh - 80px);
+  }
+  .responsive-width {
+    width: 100%;
+  }
+}
+
+@media (max-width: 810px) {
+  .main-margin-wrapper {
+    margin-left: 0px;
+    padding-top: 100px;
+  }
+  .responsive-modal2 {
+    width: 90% !important;
+    height: auto;
+    overflow-y: auto;
+  }
+}

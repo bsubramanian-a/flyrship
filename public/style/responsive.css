@@ -1,0 +1,52 @@
+@media (max-width: 1360px) {
+  /* smartphones, iPhone, portrait 480x320 phones */
+  .signup-bg {
+    background-image: none;
+    background-repeat: no-repeat;
+    background-position: right;
+    height: 100vh;
+  }
+}
+
+@media (max-width: 1180px) {
+  .main-margin-wrapper {
+    /* margin-left: 320px; */
+    padding-top: 100px;
+  }
+  .main-margin-wrapper .fixed-right {
+    position: absolute;
+    width: -webkit-fill-available;
+    left: 0px;
+    margin-right: 2em;
+  }
+}
+
+@media (max-width: 992px) {
+  .main-margin-wrapper {
+    margin-left: 0px;
+    padding-top: 100px;
+  }
+  .main-margin-wrapper .fixed-right {
+    position: absolute;
+    width: -webkit-fill-available;
+    left: 2em;
+    margin-right: 2em;
+  }
+  .custom-modal .MuiBox-root {
+    width: 100%;
+  }
+  .mobile-scroll-modal {
+    overflow-y: scroll;
+    height: calc(100vh - 80px);
+  }
+  .responsive-width {
+    width: 100%;
+  }
+}
+
+@media (max-width: 810px) {
+  .main-margin-wrapper {
+    margin-left: 0px;
+    padding-top: 100px;
+  }
+}
