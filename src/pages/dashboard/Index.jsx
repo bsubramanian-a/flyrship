@@ -5,10 +5,10 @@ import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import { styled } from "@mui/material/styles";
-
 import SideMenu from "../../components/SideMenu";
+import withAuth from "../middleware/WithAuth";
 
-Index.title = "My Listings";
+// Index.title = "My Listings";
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.mode === "dark" ? "#1A2027" : "#fff",
   ...theme.typography.body2,
@@ -16,7 +16,8 @@ const Item = styled(Paper)(({ theme }) => ({
   textAlign: "center",
   color: theme.palette.text.secondary,
 }));
-export default function Index() {
+
+const Index = () => {
   return (
     <Container maxWidth='lg' className='main-margin-wrapper'>
       <div className='side-nav'>
@@ -44,3 +45,5 @@ export default function Index() {
     </Container>
   );
 }
+
+export default withAuth(Index);

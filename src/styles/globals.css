@@ -603,3 +603,19 @@ table {
     color-scheme: dark;
   }
 }
+
+.error_text{
+  color: red;
+}
+
+.success_text{
+  color: green;
+}
+
+.mb0{
+  margin-bottom: 0px !important;
+}
+
+.mt_form {
+  margin-top: 1.2em !important;
+}

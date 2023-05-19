@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, {useState, useEffect} from "react";
 import { Container, FormControl } from "@mui/joy";
 import Grid from "@mui/joy/Grid";
 import Checkbox from "@mui/material/Checkbox";
@@ -18,12 +18,18 @@ import OnlyLogo from "../../components/OnlyLogo";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/material.css";
 import Image from "next/image";
-
 import Google from "../../../public/images/icons/google.svg";
 import Facebook from "../../../public/images/icons/facebook.svg";
 import Phone from "../../../public/images/icons/phone.svg";
 import HrLine from "../../../public/images/icons/line.svg";
 import PhoneModal from "../../components/PhoneModal";
+import * as Yup from 'yup';
+import { useRouter } from 'next/router';
+
+const validationSchema = Yup.object().shape({
+  username: Yup.string().required('Email is required'),
+  password: Yup.string().required('Password is required'),
+});
 
 const label = { inputProps: { "aria-label": "Checkbox demo" } };
 const modalStyle = {
@@ -42,10 +48,94 @@ const phoneInputStyle = {
   p: 4,
 };
 Login.title = "Login";
+
 export default function Login() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
   const [open, setOpen] = React.useState(false);
   const loginPhone = () => setOpen(true);
   const loginPhoneClose = () => setOpen(false);
+  const [formData, setFormData] = useState({ username: '', password: '' });
+  const [errors, setErrors] = useState({});
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      await validationSchema.validate(formData, { abortEarly: false });
+      // Validation passed, handle form submission logic
+      // Perform any necessary API calls
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      // console.log("response login screen", response);
+
+      if (response.ok) {
+        const data = await response.json();
+        // console.log("Login response data:", data); // Log the data object
+      
+        // Check if the access_token property exists in the data object
+        if (data?.data?.hasOwnProperty('access_token')) {
+          // console.log("data?.data?.access_token", data?.data?.access_token)
+          const accessToken = data?.data?.access_token;
+          localStorage.setItem('accessToken', accessToken);
+          // Handle successful form submission
+          setFormData({
+            username: '',
+            password: ''
+          });
+          // Redirect to the dashboard or perform other actions
+          router.push('/dashboard/Index');
+        } else {
+          // Handle the case when access_token is not found in the response
+          setError('Login failed, please try again later');
+        }
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error); // Set the error message received from the backend
+      }      
+      
+      setErrors({});
+    } catch (error) {
+      if (error instanceof Yup.ValidationError) {
+        const validationErrors = {};
+        error.inner.forEach((err) => {
+          validationErrors[err.path] = err.message;
+        });
+        setErrors(validationErrors);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken & accessToken != '') {
+      // User is not authenticated, redirect to login
+      router.push('/dashboard/Index');
+    } else {
+      // User is authenticated, allow rendering of the component
+      setIsLoading(false);
+    }
+  }, []);
+
+  if (isLoading) {
+    // Render a loading state or a placeholder while the authentication check is in progress
+    return <div>Loading...</div>;
+  }
+
   return (
     <section className='signup-bg'>
       <Container maxWidth='lg'>
@@ -157,72 +247,84 @@ export default function Login() {
               />
             </Box>
 
-            <Grid container spacing={2} marginTop={2}>
-              <Grid item xs={12} md={12}>
-                <TextField
-                  id='email'
-                  fullWidth
-                  label='Username/Email'
-                  variant='outlined'
-                  className='form-inputs'
-                />
-
-                <TextField
-                  id='password'
-                  fullWidth
-                  label='Password'
-                  type={"password"}
-                  variant='outlined'
-                  className='form-inputs'
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <FormGroup>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        defaultChecked
-                        sx={{
-                          color: grey[900],
-                          "&.Mui-checked": { color: grey[900] },
-                        }}
-                      />
-                    }
-                    label='Remember me'
+            {error && <p className="error_text">{error}</p>}
+            <form onSubmit={handleSubmit}>
+              <Grid container spacing={2} marginTop={2}>
+                <Grid item xs={12} md={12}>
+                  <TextField
+                    id='username'
+                    fullWidth
+                    name="username"
+                    value={formData.username}
+                    label='Username/Email'
+                    variant='outlined'
+                    className='form-inputs mb0 mt_form'
+                    onChange={handleChange}
                   />
-                </FormGroup>
+                  {errors.username && <span className="error_text">{errors.username}</span>}
+
+                  <TextField
+                    id='password'
+                    fullWidth
+                    label='Password'
+                    type={"password"}
+                    name="password"
+                    value={formData.password}
+                    variant='outlined'
+                    className='form-inputs mb0 mt_form'
+                    onChange={handleChange}
+                  />
+                  {errors.password && <span className="error_text">{errors.password}</span>}
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <FormGroup>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          defaultChecked
+                          sx={{
+                            color: grey[900],
+                            "&.Mui-checked": { color: grey[900] },
+                          }}
+                        />
+                      }
+                      label='Remember me'
+                    />
+                  </FormGroup>
+                </Grid>
+                <Grid item xs={12} md={6} textAlign='right'>
+                  <h5>
+                    <Link href='PasswordRecovery'>Forget Password?</Link>
+                  </h5>
+                </Grid>
+                <Button
+                  type='submit'
+                  variant='contained'
+                  size='large'
+                  fullWidth
+                  className='black-button'
+                  style={{
+                    padding: "1em 2em",
+                    marginTop: "1.5em",
+                    marginBottom: "1em",
+                  }}
+                >
+                  Login
+                </Button>
+                <Grid
+                  item
+                  xs={12}
+                  md={12}
+                  textAlign='center'
+                  sx={{ paddingBottom: "2em" }}
+                >
+                  <h5>
+                    New here? <Link href='Signup'>Sign up</Link>
+                  </h5>
+                </Grid>
               </Grid>
-              <Grid item xs={12} md={6} textAlign='right'>
-                <h5>
-                  <Link href='PasswordRecovery'>Forget Password?</Link>
-                </h5>
-              </Grid>
-              <Button
-                variant='contained'
-                size='large'
-                fullWidth
-                className='black-button'
-                style={{
-                  padding: "1em 2em",
-                  marginTop: "1.5em",
-                  marginBottom: "1em",
-                }}
-              >
-                Login
-              </Button>
-              <Grid
-                item
-                xs={12}
-                md={12}
-                textAlign='center'
-                sx={{ paddingBottom: "2em" }}
-              >
-                <h5>
-                  New here? <Link href='Signup'>Sign up</Link>
-                </h5>
-              </Grid>
-            </Grid>
+            </form>
           </Grid>
         </Grid>
       </Container>

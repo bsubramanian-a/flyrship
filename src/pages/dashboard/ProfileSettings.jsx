@@ -35,12 +35,6 @@ import enLocale from "i18n-iso-countries/langs/en.json";
 import itLocale from "i18n-iso-countries/langs/it.json";
 
 ProfileSettings.title = "Profile Settings";
-const [state, setState] = React.useState({
-  open: false,
-  vertical: "top",
-  horizontal: "center",
-});
-const { vertical, horizontal, open } = state;
 
 const handleClick = (newState) => () => {
   setState({ open: true, ...newState });
