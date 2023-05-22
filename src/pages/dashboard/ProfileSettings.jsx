@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Container } from "@mui/joy";
 import Grid from "@mui/joy/Grid";
 import Stack from "@mui/material/Stack";
@@ -33,8 +33,17 @@ import Snackbar, { SnackbarOrigin } from "@mui/material/Snackbar";
 // Import the languages you want to use
 import enLocale from "i18n-iso-countries/langs/en.json";
 import itLocale from "i18n-iso-countries/langs/it.json";
+import { getStatesByCountryCode } from "countries-states-data";
+import withAuth from "../middleware/WithAuth";
+import { useRouter } from 'next/router';
+import * as Yup from 'yup';
 
-ProfileSettings.title = "Profile Settings";
+const validationSchema = Yup.object().shape({
+  currentPassword: Yup.string().required('Current Password is required'),
+  newPassword: Yup.string().required('New Password is required'),
+  confirmPassword: Yup.string().required('New Password is required'),
+});
+// ProfileSettings.title = "Profile Settings";
 
 const handleClick = (newState) => () => {
   setState({ open: true, ...newState });
@@ -43,19 +52,128 @@ const handleClick = (newState) => () => {
 const handleClose = () => {
   setState({ ...state, open: false });
 };
-export default function ProfileSettings() {
+const ProfileSettings = () => {
+  const router = useRouter();
   const [state, setState] = React.useState("");
-  const [country, setCountry] = React.useState("");
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [errors, setErrors] = useState({});
+  const [error, setError] = useState('');
 
-  const handleChange = (event) => {
-    setState(event.target.value);
-    setCountry(event.target.value);
+  const handlePasswordChange = (e) => {
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [e.target.name]: e.target.value,
+    }));
   };
-  const [value, setValue] = useState("");
 
-  const [selectedCountry, setSelectedCountry] = useState("");
+  const changePassword = async() => {
+    setErrors({});
+    try{
+      // console.log("change password formdata", formData);
+      await validationSchema.validate(formData, { abortEarly: false });
 
-  const selectCountryHandler = (value) => setSelectedCountry(value);
+      const response = await fetch('/api/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if(data?.statusCode == 404){
+
+        }else{
+          setFormData({
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+          });
+    
+          setErrors({});
+        }
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error); // Set the error message received from the backend
+      } 
+    } catch (error) {
+      if (error instanceof Yup.ValidationError) {
+        const validationErrors = {};
+        error.inner.forEach((err) => {
+          validationErrors[err.path] = err.message;
+        });
+        setErrors(validationErrors);
+      }
+    }     
+  }
+
+  useEffect(() => {
+    // Fetch the user profile data from the Next.js API
+    fetch('/api/profile', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        setUser(data);
+        // console.log("userdata", data);
+        setLoading(false);
+        if(data?.statusCode == 401){
+          router.push('/auth/Login');
+          localStorage.setItem('accessToken', "");
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching user profile:', error);
+        setLoading(false);
+      });
+  }, []);  
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch('/api/update-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        body: JSON.stringify(user),
+      });
+
+      console.log("update profile resp", response);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("update profile response data:", data); // Log the data object
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error); // Set the error message received from the backend
+      }      
+    } catch (error) {
+      console.log("error", error);
+    }
+  };
+
+  useEffect(() => {
+    if(user?.country) selectCountryHandler(user?.country);
+  }, [user?.country])
+
+  // const [selectedCountry, setSelectedCountry] = useState("");
+
+  const selectCountryHandler = (value) => {
+    console.log("selectCountryHandler", value);
+    // setSelectedCountry(value);
+    const states = getStatesByCountryCode(value);
+    setState(states);
+    handleChange('country')({ target: { value } });
+  }
 
   // Have to register the languages you want to use
   countries.registerLocale(enLocale);
@@ -91,6 +209,26 @@ export default function ProfileSettings() {
     setOpen(false);
   };
 
+  const handleChange = (property) => (event) => {
+    console.log("change ", event)
+    if (property === 'zip') {
+      const inputValue = event.target.value;
+      const numericValue = inputValue.replace(/\D/g, ''); // Remove non-numeric characters
+  
+      if (numericValue.length <= 9) {
+        setUser((prevUser) => ({
+          ...prevUser,
+          zip: numericValue,
+        }));
+      }
+    } else {
+      setUser((prevUser) => ({
+        ...prevUser,
+        [property]: event?.target?.type === 'checkbox' ? event.target.checked : event.target.value,
+      }));
+    }
+  };  
+
   return (
     <Container maxWidth='lg' className='main-margin-wrapper'>
       <div className='side-nav'>
@@ -118,8 +256,8 @@ export default function ProfileSettings() {
                       fullWidth
                       disabled
                       placeholder='Enter First Name'
-                      label='First Name'
-                      defaultValue='Lilly'
+                      label=''
+                      value={user?.firstname}
                       variant='outlined'
                       className='form-inputs'
                     />
@@ -128,8 +266,8 @@ export default function ProfileSettings() {
                       fullWidth
                       disabled
                       placeholder='Enter Last Name'
-                      label='Last Name'
-                      defaultValue='Chang'
+                      label=''
+                      value={user?.lastname}
                       variant='outlined'
                       className='form-inputs'
                     />
@@ -141,8 +279,8 @@ export default function ProfileSettings() {
                       disabled
                       type='email'
                       placeholder='Enter Email Address'
-                      label='Email Address'
-                      defaultValue='lilly@demo.com'
+                      label=''
+                      value={user?.email}
                       variant='outlined'
                       className='form-inputs'
                     />
@@ -151,8 +289,8 @@ export default function ProfileSettings() {
                       fullWidth
                       disabled
                       placeholder='Enter Phone Number'
-                      label='Phone Number'
-                      defaultValue='+91-2547896324'
+                      label=''
+                      value={user?.phone}
                       variant='outlined'
                       className='form-inputs'
                     />
@@ -161,11 +299,12 @@ export default function ProfileSettings() {
                     <FormControlLabel
                       control={
                         <Checkbox
-                          defaultChecked
+                          checked={user?.is_email_public || false}
                           sx={{
                             color: grey[900],
                             "&.Mui-checked": { color: grey[900] },
                           }}
+                          onChange={handleChange('is_email_public')}
                         />
                       }
                       label='Want to show my email publicly.'
@@ -173,11 +312,12 @@ export default function ProfileSettings() {
                     <FormControlLabel
                       control={
                         <Checkbox
-                          defaultChecked
+                          checked={user?.is_phone_public || false}
                           sx={{
                             color: grey[900],
                             "&.Mui-checked": { color: grey[900] },
                           }}
+                          onChange={handleChange('is_phone_public')}
                         />
                       }
                       label='Want to show my phone number publicly.'
@@ -190,29 +330,33 @@ export default function ProfileSettings() {
                       fullWidth
                       placeholder='Enter First Name'
                       label='Address'
-                      defaultValue='Celeste Slater606-3727 Ullamcorper. StreetRoseville NH 11523(786) 713-8616'
+                      value={user?.address || ""}
                       variant='outlined'
                       className='form-inputs'
+                      onChange={handleChange('address')}
                     />
                   </Stack>
                   <Stack direction='row' spacing={2} mt={1}>
                     <TextField
                       id='outlined-basic'
                       fullWidth
-                      placeholder='Enter First Name'
+                      value={user?.city || ""}
+                      placeholder='Enter City'
                       label='City'
                       defaultValue='Ullamcorper'
                       variant='outlined'
                       className='form-inputs'
+                      onChange={handleChange('city')}
                     />
                     <TextField
                       id='outlined-basic'
                       fullWidth
-                      placeholder='Enter First Name'
+                      value={user?.zip || ""}
+                      placeholder='Enter zip'
                       label='Zip'
-                      defaultValue='254789'
                       variant='outlined'
                       className='form-inputs'
+                      onChange={handleChange('zip')}
                     />
                   </Stack>
                   <Stack direction='row' spacing={2} mt={1}>
@@ -223,14 +367,17 @@ export default function ProfileSettings() {
                       <Select
                         labelId='demo-simple-select-label'
                         id='demo-simple-select'
-                        value={state}
+                        value={user?.state || ""}
                         label='State'
-                        onChange={handleChange}
+                        onChange={handleChange('state')}
                         className='form-inputs'
                       >
-                        <MenuItem value={10}>Roseville</MenuItem>
-                        <MenuItem value={20}>Roseville 2</MenuItem>
-                        <MenuItem value={30}>Roseville 3</MenuItem>
+                        {!!state?.length &&
+                          state.map(state => (
+                            <MenuItem key={state?.state_code} value={state?.state_code}>
+                              {state?.name}
+                            </MenuItem>
+                        ))}
                       </Select>
                     </FormControl>
 
@@ -242,7 +389,7 @@ export default function ProfileSettings() {
                         style={{ width: "100%" }}
                         className='form-inputs'
                         label='Country'
-                        value={selectedCountry}
+                        value={user?.country || ""}
                         onChange={(e) => selectCountryHandler(e.target.value)}
                       >
                         {!!countryArr?.length &&
@@ -250,7 +397,7 @@ export default function ProfileSettings() {
                             <MenuItem key={value} value={value}>
                               {label}
                             </MenuItem>
-                          ))}
+                        ))}
                       </Select>
                     </FormControl>
                   </Stack>
@@ -262,7 +409,8 @@ export default function ProfileSettings() {
                       className='form-inputs'
                       multiline
                       inputProps={{ maxLength: 400 }}
-                      defaultValue='Duis velit dui, sagittis sed pulvinar vitae, bibendum eget nisi. Duis tincidunt in dui vel iaculis. Vestibulum libero orci, pharetra nec placerat fringilla, sodales quis nunc. Aenean vitae congue mi, molestie laoreet ligula. Suspendisse efficitur, metus nec consequat tincidunt, felis metus efficitur enim, ac scelerisque felis est a erat.'
+                      onChange={handleChange('about_me')}
+                      value={user?.about_me}
                     />
                   </Stack>
                 </CardContent>
@@ -316,6 +464,8 @@ export default function ProfileSettings() {
                               />
                             </InputAdornment>
                           }
+                          value={user?.facebook || ""}
+                          onChange={handleChange('facebook')}
                         />
                       </FormControl>
 
@@ -340,6 +490,8 @@ export default function ProfileSettings() {
                               />
                             </InputAdornment>
                           }
+                          value={user?.twitter || ""}
+                          onChange={handleChange('twitter')}
                         />
                       </FormControl>
                     </Stack>
@@ -369,6 +521,8 @@ export default function ProfileSettings() {
                               />
                             </InputAdornment>
                           }
+                          value={user?.instagram || ""}
+                          onChange={handleChange('instagram')}
                         />
                       </FormControl>
 
@@ -393,17 +547,20 @@ export default function ProfileSettings() {
                               />
                             </InputAdornment>
                           }
+                          value={user?.linkedin || ""}
+                          onChange={handleChange('linkedin')}
                         />
                       </FormControl>
                     </Stack>
                     <FormControlLabel
                       control={
                         <Checkbox
-                          defaultChecked
+                          checked={user?.is_social_public || false}
                           sx={{
                             color: grey[900],
                             "&.Mui-checked": { color: grey[900] },
                           }}
+                          onChange={handleChange('is_social_public')}
                         />
                       }
                       label='Want to show my social links publicly.'
@@ -453,6 +610,9 @@ export default function ProfileSettings() {
                           type={showPassword ? "text" : "password"}
                           label='Current Password'
                           className='form-inputs'
+                          defaultValue={formData.currentPassword}
+                          onChange={handlePasswordChange}
+                          name="currentPassword"
                           endAdornment={
                             <InputAdornment position='end'>
                               <IconButton
@@ -469,7 +629,11 @@ export default function ProfileSettings() {
                               </IconButton>
                             </InputAdornment>
                           }
+                          inputProps={{
+                            autoComplete: "new-password", // Set autocomplete attribute to "new-password"
+                          }}
                         />
+                        {errors.currentPassword && <span className="error_text">{errors.currentPassword}</span>}
                       </FormControl>
                     </Stack>
                     <Stack
@@ -482,24 +646,42 @@ export default function ProfileSettings() {
                           id='outlined-basic'
                           fullWidth
                           type='password'
+                          defaultValue={formData.newPassword}
                           placeholder='Enter New Password'
                           label='New Password'
+                          name="newPassword"
                           variant='outlined'
-                          className='form-inputs'
+                          onChange={handlePasswordChange}
+                          className='form-inputs mb0 mt_form'
                         />
+                        {errors.newPassword && <span className="error_text">{errors.newPassword}</span>}
                       </FormControl>
                       <FormControl variant='outlined' fullWidth>
                         <TextField
                           id='outlined-basic'
                           fullWidth
                           type='password'
+                          name="confirmPassword"
+                          defaultValue={formData.confirmPassword}
                           placeholder='Confirm New Password'
                           label='Confirm New Password'
                           variant='outlined'
-                          className='form-inputs'
+                          onChange={handlePasswordChange}
+                          className='form-inputs mb0 mt_form'
                         />
+                        {errors.confirmPassword && <span className="error_text">{errors.confirmPassword}</span>}
                       </FormControl>
                     </Stack>
+                    <Button
+                        variant='contained'
+                        size='small'
+                        fullWidth
+                        onClick={changePassword}
+                        sx={{ marginTop: "2.5em", padding: "0em 2em", display: "flex" }}
+                        className='form-submit'
+                      >
+                        Change Password
+                    </Button>
                   </Paper>
                 </CardContent>
               </Card>
@@ -554,10 +736,7 @@ export default function ProfileSettings() {
                 variant='contained'
                 size='large'
                 fullWidth
-                onClick={handleClick({
-                  vertical: "bottom",
-                  horizontal: "right",
-                })}
+                onClick={handleSubmit}
                 sx={{ marginTop: "2.5em", padding: "1em 2em", display: "flex" }}
                 className='form-submit'
               >
@@ -594,3 +773,5 @@ export default function ProfileSettings() {
     </Container>
   );
 }
+
+export default withAuth(ProfileSettings);
