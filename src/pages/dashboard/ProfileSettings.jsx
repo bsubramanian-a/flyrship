@@ -37,6 +37,7 @@ import { getStatesByCountryCode } from "countries-states-data";
 import withAuth from "../middleware/WithAuth";
 import { useRouter } from 'next/router';
 import * as Yup from 'yup';
+import Loader from "../../components/Loader";
 
 const validationSchema = Yup.object().shape({
   currentPassword: Yup.string().required('Current Password is required'),
@@ -56,10 +57,12 @@ const ProfileSettings = () => {
   const router = useRouter();
   const [state, setState] = React.useState("");
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [errors, setErrors] = useState({});
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [successProfile, setSuccessProfile] = useState('');
 
   const handlePasswordChange = (e) => {
     setFormData((prevFormData) => ({
@@ -70,10 +73,12 @@ const ProfileSettings = () => {
 
   const changePassword = async() => {
     setErrors({});
+    setSuccess("");
+    setError("");
     try{
       // console.log("change password formdata", formData);
       await validationSchema.validate(formData, { abortEarly: false });
-
+      setLoading(true);
       const response = await fetch('/api/change-password', {
         method: 'POST',
         headers: {
@@ -85,18 +90,21 @@ const ProfileSettings = () => {
 
       if (response.ok) {
         const data = await response.json();
-        if(data?.statusCode == 404){
-
+        console.log("change password data", data);
+        if(data?.error){
+          setError(data?.error);
         }else{
           setFormData({
             currentPassword: '',
             newPassword: '',
             confirmPassword: ''
           });
-    
+          setSuccess("Password updated successfully");
           setErrors({});
         }
+        setLoading(false);
       } else {
+        setLoading(false);
         const errorData = await response.json();
         setError(errorData.error); // Set the error message received from the backend
       } 
@@ -112,6 +120,7 @@ const ProfileSettings = () => {
   }
 
   useEffect(() => {
+    setLoading(true);
     // Fetch the user profile data from the Next.js API
     fetch('/api/profile', {
       headers: {
@@ -135,8 +144,9 @@ const ProfileSettings = () => {
   }, []);  
 
   const handleSubmit = async (e) => {
+    setSuccessProfile("");
     e.preventDefault();
-
+    setLoading(true);
     try {
       const response = await fetch('/api/update-profile', {
         method: 'POST',
@@ -151,12 +161,46 @@ const ProfileSettings = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log("update profile response data:", data); // Log the data object
+        console.log("update profile response data:", data);
+        setSuccessProfile("Profile updated successfully");
       } else {
         const errorData = await response.json();
-        setError(errorData.error); // Set the error message received from the backend
+        setError(errorData.error);
       }      
+      setLoading(false);
     } catch (error) {
+      setLoading(false);
+      console.log("error", error);
+    }
+  };
+
+  const deleteAccount = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const response = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        body: JSON.stringify(user),
+      });
+
+      console.log("delete profile resp", response);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("delete profile response data:", data);
+        localStorage.clear();
+        router.push('/auth/Login');
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error);
+      }      
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
       console.log("error", error);
     }
   };
@@ -235,6 +279,7 @@ const ProfileSettings = () => {
         <SideMenu></SideMenu>
       </div>
 
+      {loading && <Loader />}
       <Grid
         container
         rowSpacing={11}
@@ -593,6 +638,11 @@ const ProfileSettings = () => {
                       {"Change Password"}
                     </span>
 
+                    <div>
+                      {error && <span className="error_text">{error}</span>}
+                      {success && <span className="success_text">{success}</span>}
+                    </div>
+
                     <Stack
                       direction='row'
                       spacing={2}
@@ -610,7 +660,7 @@ const ProfileSettings = () => {
                           type={showPassword ? "text" : "password"}
                           label='Current Password'
                           className='form-inputs'
-                          defaultValue={formData.currentPassword}
+                          value={formData.currentPassword}
                           onChange={handlePasswordChange}
                           name="currentPassword"
                           endAdornment={
@@ -646,7 +696,7 @@ const ProfileSettings = () => {
                           id='outlined-basic'
                           fullWidth
                           type='password'
-                          defaultValue={formData.newPassword}
+                          value={formData.newPassword}
                           placeholder='Enter New Password'
                           label='New Password'
                           name="newPassword"
@@ -662,7 +712,7 @@ const ProfileSettings = () => {
                           fullWidth
                           type='password'
                           name="confirmPassword"
-                          defaultValue={formData.confirmPassword}
+                          value={formData.confirmPassword}
                           placeholder='Confirm New Password'
                           label='Confirm New Password'
                           variant='outlined'
@@ -732,6 +782,7 @@ const ProfileSettings = () => {
                   </Paper>
                 </CardContent>
               </Card>
+              {successProfile && <span className="success_text">{successProfile}</span>}
               <Button
                 variant='contained'
                 size='large'
@@ -765,7 +816,7 @@ const ProfileSettings = () => {
           <Button autoFocus onClick={handleClose} sx={{ color: "green" }}>
             Disagree
           </Button>
-          <Button onClick={handleClose} autoFocus sx={{ color: "red" }}>
+          <Button onClick={deleteAccount} autoFocus sx={{ color: "red" }}>
             Yes
           </Button>
         </DialogActions>

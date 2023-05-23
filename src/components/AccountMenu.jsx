@@ -12,6 +12,7 @@ import PersonAdd from "@mui/icons-material/PersonAdd";
 import Settings from "@mui/icons-material/Settings";
 import Logout from "@mui/icons-material/Logout";
 import MarkChatUnreadOutlinedIcon from "@mui/icons-material/MarkChatUnreadOutlined";
+import { useRouter } from "next/router";
 
 function stringToColor(string) {
   let hash = 0;
@@ -42,6 +43,7 @@ function stringAvatar(name) {
   };
 }
 export default function AccountMenu() {
+  const router = useRouter();
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const handleClick = (event) => {
@@ -50,6 +52,12 @@ export default function AccountMenu() {
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    router.push('/auth/Login');
+  };
+
   return (
     <React.Fragment>
       <Box
@@ -134,7 +142,7 @@ export default function AccountMenu() {
           </ListItemIcon>
           Settings
         </MenuItem>
-        <MenuItem onClick={handleClose}>
+        <MenuItem onClick={handleLogout}>
           <ListItemIcon>
             <Logout fontSize='small' />
           </ListItemIcon>

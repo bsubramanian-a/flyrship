@@ -25,6 +25,7 @@ import HrLine from "../../../public/images/icons/line.svg";
 import PhoneModal from "../../components/PhoneModal";
 import { useRouter } from 'next/router';
 import * as Yup from 'yup';
+import Loader from "../../components/Loader";
 
 Signup.title = "Signup";
 
@@ -63,6 +64,7 @@ export default function Signup() {
   const loginPhone = () => setOpen(true);
   const loginPhoneClose = () => setOpen(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '', confirmpassword: '', phone: '', lastname: '', firstname: '' });
   const [errors, setErrors] = useState({});
   const [error, setError] = useState('');
@@ -83,6 +85,7 @@ export default function Signup() {
     try {
       await validationSchema.validate(formData, { abortEarly: false });
       // Validation passed, handle form submission logic
+      setLoading(true);
       // Perform any necessary API calls
       const response = await fetch('/api/register', {
         method: 'POST',
@@ -112,7 +115,9 @@ export default function Signup() {
         const errorData = await response.json();
         setError(errorData.error); // Set the error message received from the backend
       }      
+      setLoading(false);
     } catch (error) {
+      setLoading(false);
       if (error instanceof Yup.ValidationError) {
         const validationErrors = {};
         error.inner.forEach((err) => {
@@ -143,7 +148,7 @@ export default function Signup() {
     <section className='signup-bg'>
       <Container maxWidth='lg'>
         <OnlyLogo></OnlyLogo>
-
+        {loading && <Loader />}
         <Grid container spacing={0} marginTop='2em'>
           <Grid item xs={12}>
             <h1>Hello!</h1>

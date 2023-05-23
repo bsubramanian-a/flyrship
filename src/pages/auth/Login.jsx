@@ -25,6 +25,7 @@ import HrLine from "../../../public/images/icons/line.svg";
 import PhoneModal from "../../components/PhoneModal";
 import * as Yup from 'yup';
 import { useRouter } from 'next/router';
+import Loader from "../../components/Loader";
 
 const validationSchema = Yup.object().shape({
   username: Yup.string().required('Email is required'),
@@ -52,6 +53,7 @@ Login.title = "Login";
 export default function Login() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [open, setOpen] = React.useState(false);
   const loginPhone = () => setOpen(true);
   const loginPhoneClose = () => setOpen(false);
@@ -72,6 +74,7 @@ export default function Login() {
     try {
       await validationSchema.validate(formData, { abortEarly: false });
       // Validation passed, handle form submission logic
+      setLoading(true);
       // Perform any necessary API calls
       const response = await fetch('/api/login', {
         method: 'POST',
@@ -103,7 +106,9 @@ export default function Login() {
           // Handle the case when access_token is not found in the response
           setError('Login failed, please try again later');
         }
+        setLoading(false);
       } else {
+        setLoading(false);
         const errorData = await response.json();
         setError(errorData.error); // Set the error message received from the backend
       }      
@@ -140,7 +145,7 @@ export default function Login() {
     <section className='signup-bg'>
       <Container maxWidth='lg'>
         <OnlyLogo></OnlyLogo>
-
+        {loading && <Loader />}
         <Grid container spacing={0} marginTop='2em'>
           <Grid item xs={12}>
             <h1>Welcome Back!</h1>

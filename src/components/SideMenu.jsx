@@ -31,11 +31,13 @@ import Link from "next/link";
 import "@fontsource/manrope";
 import { Divider } from "@mui/joy";
 import { padding } from "@mui/system";
+import { useRouter } from "next/router";
 
 const drawerWidth = 320;
 
 function SideMenu(props) {
   const [open, setOpen] = React.useState(true);
+  const router = useRouter();
 
   const handleClick = () => {
     setOpen(!open);
@@ -45,6 +47,11 @@ function SideMenu(props) {
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    router.push('/auth/Login');
   };
 
   const drawer = (
@@ -126,18 +133,16 @@ function SideMenu(props) {
                 </ListItemButton>
               </Link>
             </ListItem>
-            <ListItem disablePadding>
-              <Link href='/auth/Login'>
-                <ListItemButton>
-                  <ListItemIcon>
-                    <ExitToAppOutlinedIcon style={{ color: "#ff4141" }} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary='Log out'
-                    style={{ color: "#ff4141" }}
-                  />
-                </ListItemButton>
-              </Link>
+            <ListItem disablePadding onClick={handleLogout}>
+              <ListItemButton>
+                <ListItemIcon>
+                  <ExitToAppOutlinedIcon style={{ color: "#ff4141" }} />
+                </ListItemIcon>
+                <ListItemText
+                  primary='Log out'
+                  style={{ color: "#ff4141" }}
+                />
+              </ListItemButton>
             </ListItem>
           </List>
         </nav>
