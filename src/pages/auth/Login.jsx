@@ -75,13 +75,14 @@ export default function Login() {
       await validationSchema.validate(formData, { abortEarly: false });
       // Validation passed, handle form submission logic
       setLoading(true);
+      console.log("process.env.NEXT_PUBLIC_API_URL", process.env.NEXT_PUBLIC_API_URL);
       // Perform any necessary API calls
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: process.env.NEXT_PUBLIC_API_URL,
+        body: JSON.stringify(formData),
       });
 
       // console.log("response login screen", response);
