@@ -81,7 +81,7 @@ export default function Login() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: process.env.NEXT_PUBLIC_API_URL,
       });
 
       // console.log("response login screen", response);
