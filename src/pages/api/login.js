@@ -1,14 +1,13 @@
 export default async function handler(req, res) {
     try {
       const body = req.body;
-      // console.log("login body", body);
-      // console.log("url", process.env.NEXT_PUBLIC_API_URL);
+      // console.log("body", body);
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: process.env.NEXT_PUBLIC_API_URL,
+        body: JSON.stringify(body),
       });
 
       // console.log("response from login api", response);
