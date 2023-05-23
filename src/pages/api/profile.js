@@ -3,7 +3,7 @@ export default async (req, res) => {
       const token = req.headers.authorization.split(' ')[1];
       
       // Make a request to your Nest.js API to fetch the user profile
-      const response = await fetch('http://192.168.18.134:3000/profile', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/profile`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

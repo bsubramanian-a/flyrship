@@ -11,7 +11,7 @@ export default async function handler(req, res) {
       const user = req.body;
   
       // Make a request to your Nest.js API to update the user profile
-      const response = await fetch('http://192.168.18.134:3000/profile', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

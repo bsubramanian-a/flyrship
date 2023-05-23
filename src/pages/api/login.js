@@ -2,7 +2,7 @@ export default async function handler(req, res) {
     try {
       const body = req.body;
       // console.log("body", body);
-      const response = await fetch('http://192.168.18.134:3000/auth/login', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
